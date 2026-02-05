@@ -15,7 +15,7 @@ export const Header: React.FC = () => {
       <div className="hidden md:flex items-center gap-4">
         <div className="flex items-center gap-2 px-4 py-2 bg-[#f0f2f4] dark:bg-surface-dark rounded-full border border-[#e0e0e0] dark:border-border-dark">
           <Calendar size={20} className="text-text-secondary-light dark:text-text-secondary-dark" />
-          <span className="text-[#111418] dark:text-white text-sm font-medium">Oct 24, 2023</span>
+          <span className="text-[#111418] dark:text-white text-sm font-medium">Oct 24, 2026</span>
         </div>
         <div
           className="h-10 w-10 bg-center bg-cover rounded-full border-2 border-primary cursor-pointer"
