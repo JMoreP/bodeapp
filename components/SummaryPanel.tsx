@@ -1,21 +1,31 @@
 import React from 'react';
-import { Product } from '../types';
-import { Pencil, RefreshCw, TrendingUp, Receipt } from 'lucide-react';
+import { ExchangeRate, Product } from '../types';
+import { Pencil, RefreshCw, TrendingUp, Receipt, Loader2 } from 'lucide-react';
 
 interface SummaryPanelProps {
   products: Product[];
-  exchangeRate: number;
+  exchangeRate: ExchangeRate | null;
+  isLoadingRate: boolean;
   onClearSelection: () => void;
+  onRefreshRate: () => void;
+  onManualRateChange?: (newRate: number) => void;
 }
 
 export const SummaryPanel: React.FC<SummaryPanelProps> = ({
   products,
   exchangeRate,
+  isLoadingRate,
   onClearSelection,
+  onRefreshRate,
+  onManualRateChange,
 }) => {
+  const [isEditingRate, setIsEditingRate] = React.useState(false);
+  const [tempRate, setTempRate] = React.useState('');
+
   const selectedCount = products.reduce((acc, p) => acc + p.quantity, 0);
   const subtotalUsd = products.reduce((acc, p) => acc + p.priceUsd * p.quantity, 0);
-  const totalBs = subtotalUsd * exchangeRate;
+  const rateValue = exchangeRate?.rate || 0;
+  const totalBs = subtotalUsd * rateValue;
 
   return (
     <div className="w-full xl:w-[360px] flex-shrink-0 flex flex-col gap-6 xl:sticky xl:top-6 xl:self-start">
@@ -26,24 +36,85 @@ export const SummaryPanel: React.FC<SummaryPanelProps> = ({
         </div>
         <div className="relative z-10">
           <div className="flex items-center justify-between mb-2">
-            <p className="text-text-secondary-dark text-sm font-medium uppercase tracking-wider">
-              Exchange Rate (USD/VES)
+            <p className="text-text-secondary-dark text-sm font-medium tracking-wider flex items-center gap-2">
+              EXCHANGE RATE (USD/VES)
+              {isLoadingRate && <Loader2 size={16} className="animate-spin text-primary" />}
             </p>
-            <button className="text-text-secondary-dark hover:text-primary transition-colors">
-              <Pencil size={16} />
-            </button>
+            <div className="flex items-center gap-3">
+              <button
+                className="text-text-secondary-dark hover:text-primary transition-colors disabled:opacity-50"
+                onClick={() => {
+                  setIsEditingRate(!isEditingRate);
+                  if (!isEditingRate) setTempRate(exchangeRate?.rate.toString() || '');
+                }}
+                title={isEditingRate ? "Cancel Editing" : "Edit Rate Manually"}
+              >
+                <Pencil size={16} className={isEditingRate ? "text-primary" : ""} />
+              </button>
+              <button
+                className="text-text-secondary-dark hover:text-primary transition-colors disabled:opacity-50"
+                onClick={onRefreshRate}
+                disabled={isLoadingRate}
+                title="Refresh Rate"
+              >
+                <RefreshCw size={16} className={isLoadingRate ? "animate-spin" : ""} />
+              </button>
+            </div>
           </div>
           <div className="flex items-baseline gap-2 mb-2">
             <h3 className="text-white text-4xl font-bold tracking-tight">
-              {exchangeRate.toFixed(2)} Bs.
+              {isEditingRate ? (
+                <div className="flex items-center gap-2">
+                  <input
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    value={tempRate}
+                    onChange={(e) => setTempRate(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        const parsed = parseFloat(tempRate);
+                        if (!isNaN(parsed) && parsed > 0) {
+                          onManualRateChange?.(parsed);
+                          setIsEditingRate(false);
+                        }
+                      }
+                    }}
+                    autoFocus
+                    className="w-32 bg-transparent border-b-2 border-primary focus:outline-none text-white pb-1"
+                  />
+                  <span className="text-2xl">Bs.</span>
+                  <button
+                    onClick={() => {
+                      const parsed = parseFloat(tempRate);
+                      if (!isNaN(parsed) && parsed > 0) {
+                        onManualRateChange?.(parsed);
+                        setIsEditingRate(false);
+                      }
+                    }}
+                    className="ml-2 text-sm bg-primary/20 hover:bg-primary/40 text-primary px-3 py-1 rounded"
+                  >
+                    Save
+                  </button>
+                </div>
+              ) : isLoadingRate && !exchangeRate ? (
+                <span className="text-2xl text-text-secondary-dark animate-pulse">Fetching...</span>
+              ) : (
+                `${rateValue.toFixed(2)} Bs.`
+              )}
             </h3>
           </div>
           <div className="flex items-center gap-2">
-            <span className="flex items-center text-primary bg-primary/10 px-2 py-0.5 rounded text-xs font-bold">
-              <TrendingUp size={12} className="mr-1" />
-              +0.5%
-            </span>
-            <span className="text-text-secondary-light text-xs">Updated 15m ago</span>
+            {exchangeRate && (
+              <>
+                <span className="flex items-center text-primary bg-primary/10 px-2 py-0.5 rounded text-[10px] font-bold uppercase ring-1 ring-primary/20">
+                  {exchangeRate.source}
+                </span>
+                <span className="text-text-secondary-light text-xs">
+                  Updated {new Date(exchangeRate.lastUpdated).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                </span>
+              </>
+            )}
           </div>
         </div>
       </div>
@@ -68,7 +139,7 @@ export const SummaryPanel: React.FC<SummaryPanelProps> = ({
               <span className="text-[#111418] dark:text-white text-base font-bold">
                 Total Amount
               </span>
-              <span className="text-text-secondary-light text-xs">in Bolivars (VES)</span>
+              <span className="text-text-secondary-light text-xs">in Bolivars (VES) </span>
             </div>
             <div className="flex flex-col items-end">
               <span className="text-primary text-2xl font-black tracking-tight drop-shadow-sm">

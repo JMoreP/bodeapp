@@ -3,12 +3,11 @@ export interface Product {
   name: string;
   sku: string;
   priceUsd: number;
-  image: string;
   quantity: number;
 }
 
 export interface ExchangeRate {
   rate: number;
   lastUpdated: string;
-  trend: number;
+  source: string;
 }

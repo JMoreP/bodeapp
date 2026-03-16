@@ -1,7 +1,10 @@
 import React from 'react';
 import { Calculator, Package, History, Settings, LogOut, DollarSign } from 'lucide-react';
 
-export const Sidebar: React.FC = () => {
+export const Sidebar: React.FC<{
+  activeTab: 'calculator' | 'inventory';
+  onTabChange: (tab: 'calculator' | 'inventory') => void;
+}> = ({ activeTab, onTabChange }) => {
   return (
     <aside className="w-20 lg:w-64 flex-shrink-0 flex flex-col justify-between border-r border-[#e0e0e0] dark:border-border-dark bg-surface-light dark:bg-background-dark transition-all duration-300">
       <div className="flex flex-col gap-4 p-4">
@@ -25,20 +28,26 @@ export const Sidebar: React.FC = () => {
 
         {/* Navigation */}
         <nav className="flex flex-col gap-2 mt-4">
-          <a
-            className="flex items-center gap-3 px-3 py-3 rounded-full bg-[#2c4724] dark:bg-primary text-white dark:text-primary-content group transition-colors"
-            href="#"
+          <button
+            onClick={() => onTabChange('calculator')}
+            className={`flex items-center gap-3 px-3 py-3 rounded-full transition-colors w-full ${activeTab === 'calculator'
+                ? 'bg-[#2c4724] dark:bg-primary text-white dark:text-primary-content'
+                : 'text-text-secondary-light dark:text-text-secondary-dark hover:bg-[#f0f2f4] dark:hover:bg-surface-dark'
+              }`}
           >
-            <Calculator size={24} className="dark:fill-primary-content" />
-            <span className="text-sm font-bold leading-normal hidden lg:block">Calculator</span>
-          </a>
-          <a
-            className="flex items-center gap-3 px-3 py-3 rounded-full text-text-secondary-light dark:text-text-secondary-dark hover:bg-[#f0f2f4] dark:hover:bg-surface-dark transition-colors"
-            href="#"
+            <Calculator size={24} className={activeTab === 'calculator' ? 'dark:fill-primary-content' : ''} />
+            <span className={`text-sm leading-normal hidden lg:block ${activeTab === 'calculator' ? 'font-bold' : 'font-medium'}`}>Calculator</span>
+          </button>
+          <button
+            onClick={() => onTabChange('inventory')}
+            className={`flex items-center gap-3 px-3 py-3 rounded-full transition-colors w-full ${activeTab === 'inventory'
+                ? 'bg-[#2c4724] dark:bg-primary text-white dark:text-primary-content'
+                : 'text-text-secondary-light dark:text-text-secondary-dark hover:bg-[#f0f2f4] dark:hover:bg-surface-dark'
+              }`}
           >
-            <Package size={24} />
-            <span className="text-sm font-medium leading-normal hidden lg:block">Inventory</span>
-          </a>
+            <Package size={24} className={activeTab === 'inventory' ? 'dark:fill-primary-content' : ''} />
+            <span className={`text-sm leading-normal hidden lg:block ${activeTab === 'inventory' ? 'font-bold' : 'font-medium'}`}>Inventory</span>
+          </button>
           <a
             className="flex items-center gap-3 px-3 py-3 rounded-full text-text-secondary-light dark:text-text-secondary-dark hover:bg-[#f0f2f4] dark:hover:bg-surface-dark transition-colors"
             href="#"

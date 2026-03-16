@@ -37,22 +37,17 @@ export const ProductTable: React.FC<ProductTableProps> = ({
             {products.map((product) => {
               const subtotalBs = product.priceUsd * product.quantity * exchangeRate;
               const isSelected = product.quantity > 0;
-              
+
               return (
                 <tr
                   key={product.id}
-                  className={`group hover:bg-[#f8f9fa] dark:hover:bg-[#243420] transition-colors ${
-                    isSelected
+                  className={`group hover:bg-[#f8f9fa] dark:hover:bg-[#243420] transition-colors ${isSelected
                       ? 'bg-[#f0f9ff]/50 dark:bg-[#2c4724]/30 border-l-4 border-l-primary'
                       : 'border-l-4 border-l-transparent'
-                  }`}
+                    }`}
                 >
                   <td className="px-6 py-4">
                     <div className="flex items-center gap-3">
-                      <div
-                        className="bg-center bg-cover rounded-lg h-10 w-10 bg-[#e0e0e0] dark:bg-[#2c4724]"
-                        style={{ backgroundImage: `url('${product.image}')` }}
-                      ></div>
                       <div className="flex flex-col">
                         <span className="text-[#111418] dark:text-white font-medium text-sm">
                           {product.name}
@@ -77,9 +72,8 @@ export const ProductTable: React.FC<ProductTableProps> = ({
                         <Minus size={14} strokeWidth={3} />
                       </button>
                       <input
-                        className={`w-10 text-center bg-transparent font-semibold text-sm focus:outline-none ${
-                            isSelected ? 'text-[#111418] dark:text-white' : 'text-text-secondary-light dark:text-text-secondary-light'
-                        }`}
+                        className={`w-10 text-center bg-transparent font-semibold text-sm focus:outline-none ${isSelected ? 'text-[#111418] dark:text-white' : 'text-text-secondary-light dark:text-text-secondary-light'
+                          }`}
                         readOnly
                         type="text"
                         value={product.quantity}
@@ -88,17 +82,16 @@ export const ProductTable: React.FC<ProductTableProps> = ({
                         onClick={() => onQuantityChange(product.id, 1)}
                         className="w-8 h-8 rounded-full bg-[#e0e0e0] dark:bg-[#2c4724] text-[#111418] dark:text-white hover:bg-[#d0d0d0] dark:hover:bg-[#3f6534] flex items-center justify-center transition-colors"
                       >
-                         <Plus size={14} strokeWidth={3} />
+                        <Plus size={14} strokeWidth={3} />
                       </button>
                     </div>
                   </td>
                   <td className="px-6 py-4 text-right">
                     <span
-                      className={`font-bold text-sm ${
-                        isSelected
+                      className={`font-bold text-sm ${isSelected
                           ? 'text-[#111418] dark:text-white'
                           : 'text-text-secondary-light dark:text-text-secondary-light'
-                      }`}
+                        }`}
                     >
                       {subtotalBs.toLocaleString('en-US', {
                         minimumFractionDigits: 2,
