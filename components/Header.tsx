@@ -6,7 +6,7 @@ export const Header: React.FC = () => {
     <header className="flex-shrink-0 px-6 py-5 border-b border-[#e0e0e0] dark:border-border-dark flex items-center justify-between bg-surface-light dark:bg-background-dark z-10">
       <div>
         <h2 className="text-[#111418] dark:text-white text-2xl lg:text-3xl font-black leading-tight tracking-tight">
-          Product Calculator
+          Product Calculator JESUS
         </h2>
         <p className="text-text-secondary-light dark:text-text-secondary-dark text-sm font-medium mt-1">
           Manage exchange rates & quotes
