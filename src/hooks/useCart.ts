@@ -1,6 +1,7 @@
 import { useState, useMemo } from 'react';
 import { doc, writeBatch, increment } from 'firebase/firestore';
 import { db } from '../../firebase';
+import toast from 'react-hot-toast';
 import { Product, CartItem, Config } from '../types';
 
 export const useCart = (config: Config) => {
@@ -11,7 +12,7 @@ export const useCart = (config: Config) => {
       const existing = prev.find(item => item.id === product.id);
       if (existing) {
         if (existing.cartQuantity >= product.stock) return prev;
-        
+
         return prev.map(item =>
           item.id === product.id
             ? { ...item, cartQuantity: item.cartQuantity + 1 }
@@ -43,7 +44,7 @@ export const useCart = (config: Config) => {
     cartItems.forEach(item => {
       const unitPriceCost = item.bulkCost / item.unitsPerBulk;
       const unitSalePriceUsd = unitPriceCost * (1 + item.profitMargin);
-      
+
       const appliedDiscount = item.cartQuantity >= 6 ? config.discountRate : 0;
       const finalUnitSalePrice = unitSalePriceUsd * (1 - appliedDiscount);
 
@@ -57,7 +58,7 @@ export const useCart = (config: Config) => {
 
   const finalizeSale = async () => {
     if (cartItems.length === 0) return;
-    
+
     try {
       const batch = writeBatch(db);
 
@@ -73,12 +74,12 @@ export const useCart = (config: Config) => {
 
       // Ejecutar todas las escrituras juntas
       await batch.commit();
-      
-      alert('Venta procesada con éxito!');
+
+      toast.success('¡Venta procesada con éxito!');
       clearCart();
     } catch (error) {
       console.error("Error al finalizar la venta:", error);
-      alert('Hubo un error procesando la venta');
+      toast.error('Hubo un error procesando la venta');
     }
   };
 

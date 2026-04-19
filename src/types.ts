@@ -19,3 +19,10 @@ export interface Config {
 export interface CartItem extends Product {
   cartQuantity: number;
 }
+
+export interface Debt {
+  id?: string;
+  clientName: string;
+  amountUsd: number;
+  date: number; // timestamp
+}
