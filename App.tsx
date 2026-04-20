@@ -97,12 +97,13 @@ const App: React.FC = () => {
         <main className="flex-1 flex flex-col h-full overflow-hidden relative">
           <Header />
 
-          <div className="flex-1 overflow-y-auto overflow-x-hidden p-4 lg:p-6 pb-32 lg:pb-6">
+          <div className="flex-1 flex flex-col min-h-0 overflow-hidden">
             {activeTab === 'calculator' ? (
-              <div className="flex flex-col xl:flex-row gap-6 h-full animate-in fade-in duration-300">
+              <div className="flex-1 flex flex-col lg:flex-row gap-4 lg:gap-6 p-4 lg:p-6 min-h-0 overflow-hidden relative">
                 {/* Left Column: Search & Table */}
-                <div className="flex-1 flex flex-col gap-6 min-h-0">
-                  <div className="w-full">
+                <div className="flex-1 flex flex-col gap-4 lg:gap-6 min-h-0 overflow-hidden">
+                  {/* Anchored Search Bar */}
+                  <div className="sticky top-0 z-20 bg-background-light/80 dark:bg-background-dark/80 backdrop-blur-md pb-2 lg:static lg:bg-transparent lg:backdrop-blur-none lg:pb-0">
                     <label className="flex flex-col h-12 w-full">
                       <div className="flex w-full flex-1 items-stretch rounded-full h-full border border-[#e0e0e0] dark:border-border-dark bg-surface-light dark:bg-surface-dark overflow-hidden focus-within:ring-2 focus-within:ring-primary transition-all shadow-sm">
                         <div className="text-text-secondary-light dark:text-text-secondary-dark flex items-center justify-center pl-4 pr-2">
@@ -110,7 +111,7 @@ const App: React.FC = () => {
                         </div>
                         <input
                           className="flex w-full min-w-0 flex-1 resize-none bg-transparent text-[#111418] dark:text-white focus:outline-0 placeholder:text-text-secondary-light dark:placeholder:text-[#5c7252] px-2 text-base font-normal leading-normal"
-                          placeholder="Search products by name, SKU or category..."
+                          placeholder="Search products..."
                           value={searchQuery}
                           onChange={(e) => setSearchQuery(e.target.value)}
                         />
@@ -118,25 +119,30 @@ const App: React.FC = () => {
                     </label>
                   </div>
 
-                  <ProductTable
-                    products={filteredProducts}
-                    exchangeRate={exchangeRate?.rate || 0}
-                    onQuantityChange={handleQuantityChange}
-                  />
+                  {/* Scrollable Product List */}
+                  <div className="flex-1 overflow-y-auto min-h-0 rounded-xl">
+                    <ProductTable
+                      products={filteredProducts}
+                      exchangeRate={exchangeRate?.rate || 0}
+                      onQuantityChange={handleQuantityChange}
+                    />
+                  </div>
                 </div>
 
-                {/* Right Column: Summary & Rate */}
-                <SummaryPanel
-                  products={products}
-                  exchangeRate={exchangeRate}
-                  isLoadingRate={isLoadingRate}
-                  onClearSelection={handleClearSelection}
-                  onRefreshRate={fetchExchangeRate}
-                  onManualRateChange={handleManualRateChange}
-                />
+                {/* Anchored Shopping Cart / Summary */}
+                <div className="sticky bottom-0 left-0 right-0 z-30 lg:relative lg:z-0 -mx-4 -mb-4 lg:mx-0 lg:mb-0 bg-surface-light dark:bg-surface-dark border-t border-[#e0e0e0] dark:border-border-dark lg:border-none lg:bg-transparent lg:shadow-none shadow-[0_-4px_20px_rgba(0,0,0,0.1)]">
+                  <SummaryPanel
+                    products={products}
+                    exchangeRate={exchangeRate}
+                    isLoadingRate={isLoadingRate}
+                    onClearSelection={handleClearSelection}
+                    onRefreshRate={fetchExchangeRate}
+                    onManualRateChange={handleManualRateChange}
+                  />
+                </div>
               </div>
             ) : (
-              <div className="h-full animate-in fade-in space-y-4 duration-300">
+              <div className="flex-1 overflow-y-auto p-4 lg:p-6 animate-in fade-in duration-300">
                 <Inventory
                   products={products}
                   onAddProduct={handleAddProduct}

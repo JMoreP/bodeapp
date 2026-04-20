@@ -9,11 +9,12 @@ export interface Product {
   profitMargin: number; // % de Ganancia (ej. 0.3 para 30%)
   stock: number;        // Stock actual (Unidades)
   popularity: number;   // Contador de popularidad
+  discountThreshold?: number; // Cantidad mínima para descuento
+  discountRate?: number;      // % de descuento (ej. 0.05 para 5%)
 }
 
 export interface Config {
   exchangeRate: number; // Tasa del Día (Bs/$)
-  discountRate: number; // % de descuento al llevar >= 6 (ej. 0.05 para 5%)
 }
 
 export interface CartItem extends Product {

@@ -22,13 +22,14 @@ export const InventoryTable: React.FC<Props> = ({ products, onEdit, onDelete }) 
                 <th className="p-4 font-semibold text-right">Unids/Bulto</th>
                 <th className="p-4 font-semibold text-right">Costo Unidad</th>
                 <th className="p-4 font-semibold text-right">Ganancia</th>
+                <th className="p-4 font-semibold text-center">Descuento</th>
                 <th className="p-4 font-semibold text-center">Acciones</th>
               </tr>
             </thead>
             <tbody className="text-slate-700 text-sm">
               {products.length === 0 ? (
                 <tr>
-                  <td colSpan={8} className="p-8 text-center text-slate-400">
+                  <td colSpan={9} className="p-8 text-center text-slate-400">
                     No hay productos registrados en el inventario.
                   </td>
                 </tr>
@@ -53,6 +54,15 @@ export const InventoryTable: React.FC<Props> = ({ products, onEdit, onDelete }) 
                       <td className="p-4 text-right">${unitCost.toFixed(2)}</td>
                       <td className="p-4 text-right text-emerald-600 font-semibold">
                         {(product.profitMargin * 100).toFixed(0)}%
+                      </td>
+                      <td className="p-4 text-center">
+                        {product.discountThreshold ? (
+                          <span className="text-[10px] bg-blue-50 text-blue-600 px-2 py-0.5 rounded-full font-bold">
+                            {product.discountRate ? (product.discountRate * 100).toFixed(0) : 0}% de {product.discountThreshold}+
+                          </span>
+                        ) : (
+                          <span className="text-slate-300 text-xs">-</span>
+                        )}
                       </td>
                       <td className="p-4 text-center">
                         <div className="flex items-center justify-center gap-2">
@@ -96,9 +106,16 @@ export const InventoryTable: React.FC<Props> = ({ products, onEdit, onDelete }) 
                 
                 <div className="flex-1 min-w-0">
                   <h4 className="font-bold text-slate-900 text-[10px] sm:text-xs leading-tight truncate">{product.name}</h4>
-                  <span className="text-[8px] text-slate-500 uppercase font-semibold tracking-wide truncate block">
-                    {product.category}
-                  </span>
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-[8px] text-slate-500 uppercase font-semibold tracking-wide truncate">
+                      {product.category}
+                    </span>
+                    {product.discountThreshold && (
+                      <span className="text-[7px] text-blue-500 font-bold px-1 bg-blue-50 rounded">
+                        DESC {product.discountRate ? (product.discountRate * 100).toFixed(0) : 0}%
+                      </span>
+                    )}
+                  </div>
                 </div>
 
                 <div className="flex items-center gap-2 sm:gap-3 shrink-0">

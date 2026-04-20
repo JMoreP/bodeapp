@@ -11,7 +11,7 @@ import { Product, Config } from '../types';
 
 export const Dashboard: React.FC = () => {
   const [products, setProducts] = useState<Product[]>([]);
-  const [config, setConfig] = useState<Config>({ exchangeRate: 36.5, discountRate: 0.05 });
+  const [config, setConfig] = useState<Config>({ exchangeRate: 36.5 });
   const [searchQuery, setSearchQuery] = useState('');
   const [showInventoryModal, setShowInventoryModal] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Product | undefined>(undefined);
@@ -313,7 +313,10 @@ export const Dashboard: React.FC = () => {
               </div>
             ) : (
               cartItems.map(item => {
-                const itemUsd = (item.bulkCost / item.unitsPerBulk) * (1 + item.profitMargin) * item.cartQuantity * (item.cartQuantity >= 6 ? 1 - config.discountRate : 1);
+                const hasDiscount = item.discountThreshold && item.cartQuantity >= item.discountThreshold;
+                const appliedRate = hasDiscount ? (item.discountRate || 0) : 0;
+                
+                const itemUsd = (item.bulkCost / item.unitsPerBulk) * (1 + item.profitMargin) * item.cartQuantity * (1 - appliedRate);
                 const itemBs = itemUsd * config.exchangeRate;
 
                 return (
@@ -321,7 +324,7 @@ export const Dashboard: React.FC = () => {
                     <div className="flex-1 min-w-0">
                       <h4 className="font-bold text-slate-800 text-[11px] sm:text-sm leading-tight mb-0.5 truncate">{item.name}</h4>
                       <div className="text-[9px] sm:text-xs font-semibold text-emerald-600 mb-1">
-                        {item.cartQuantity >= 6 ? `¡Desc. ${(config.discountRate * 100)}%!` : ''}
+                        {hasDiscount ? `¡Desc. ${(appliedRate * 100)}%!` : ''}
                       </div>
                       <div className="flex items-center gap-1 sm:gap-2">
                         <button onClick={() => updateQuantity(item.id!, item.cartQuantity - 1)} className="w-5 h-5 sm:w-7 sm:h-7 bg-slate-50 border border-slate-200 rounded flex items-center justify-center text-slate-600 hover:bg-slate-200 font-bold transition-colors leading-none">-</button>

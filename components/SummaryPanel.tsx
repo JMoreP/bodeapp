@@ -28,9 +28,9 @@ export const SummaryPanel: React.FC<SummaryPanelProps> = ({
   const totalBs = subtotalUsd * rateValue;
 
   return (
-    <div className="w-full xl:w-[360px] flex-shrink-0 flex flex-col gap-6 xl:sticky xl:top-6 xl:self-start">
-      {/* Exchange Rate Card */}
-      <div className="p-6 rounded-xl bg-gradient-to-br from-[#1e2b1a] to-[#0f180c] border border-border-dark relative overflow-hidden group shadow-lg">
+    <div className="w-full xl:w-[360px] flex-shrink-0 flex flex-col gap-4 lg:gap-6 lg:sticky lg:top-6 lg:self-start">
+      {/* Exchange Rate Card - Hidden on Mobile Anchored View */}
+      <div className="hidden lg:block p-6 rounded-xl bg-gradient-to-br from-[#1e2b1a] to-[#0f180c] border border-border-dark relative overflow-hidden group shadow-lg">
         <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-20 transition-opacity">
           <RefreshCw size={96} className="text-primary" />
         </div>
@@ -119,12 +119,20 @@ export const SummaryPanel: React.FC<SummaryPanelProps> = ({
         </div>
       </div>
 
-      {/* Calculation Summary */}
-      <div className="bg-surface-light dark:bg-surface-dark rounded-xl border border-[#e0e0e0] dark:border-border-dark flex flex-col flex-1 shadow-sm h-min">
-        <div className="p-6 border-b border-[#e0e0e0] dark:border-border-dark">
-          <h3 className="text-[#111418] dark:text-white text-lg font-bold">Total Calculation</h3>
+      {/* Calculation Summary - Compact on Mobile */}
+      <div className="bg-surface-light dark:bg-surface-dark rounded-xl border border-[#e0e0e0] dark:border-border-dark flex flex-col shadow-sm lg:h-min overflow-hidden">
+        <div className="p-4 lg:p-6 border-b border-[#e0e0e0] dark:border-border-dark flex justify-between items-center">
+          <h3 className="text-[#111418] dark:text-white text-base lg:text-lg font-bold flex items-center gap-2">
+            <Receipt size={18} className="text-primary lg:hidden" />
+            Cart Summary
+          </h3>
+          <span className="lg:hidden text-primary font-black text-xl">
+            {totalBs.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} Bs.
+          </span>
         </div>
-        <div className="p-6 flex flex-col gap-4 flex-1">
+
+        {/* Detailed Stats - Desktop Only */}
+        <div className="hidden lg:flex p-6 flex-col gap-4">
           <div className="flex justify-between items-center text-text-secondary-light dark:text-[#cbd5e1]">
             <span className="text-sm font-medium">Selected Items</span>
             <span className="text-sm font-bold">{selectedCount}</span>
@@ -152,16 +160,18 @@ export const SummaryPanel: React.FC<SummaryPanelProps> = ({
             </div>
           </div>
         </div>
-        <div className="p-4 bg-[#f0f2f4] dark:bg-[#20321a] rounded-b-xl flex flex-col gap-3">
-          <button className="w-full py-3 px-4 bg-primary hover:bg-[#3dd015] active:bg-[#32b010] text-primary-content font-bold rounded-lg shadow-lg shadow-primary/20 transition-all flex items-center justify-center gap-2">
-            <Receipt size={20} />
-            Generate Quote
+
+        {/* Action Buttons - Horizontal on Mobile, Vertical on Desktop */}
+        <div className="p-3 lg:p-4 bg-[#f0f2f4] dark:bg-[#20321a] lg:rounded-b-xl flex flex-row lg:flex-col gap-3">
+          <button className="flex-1 lg:w-full py-2.5 lg:py-3 px-4 bg-primary hover:bg-[#3dd015] active:bg-[#32b010] text-primary-content font-bold rounded-lg shadow-lg shadow-primary/20 transition-all flex items-center justify-center gap-2 text-sm lg:text-base">
+            <Receipt size={20} className="hidden lg:block" />
+            Checkout
           </button>
           <button
             onClick={onClearSelection}
-            className="w-full py-3 px-4 bg-transparent border border-[#e0e0e0] dark:border-border-dark text-text-secondary-light dark:text-text-secondary-dark hover:bg-[#e2e8f0] dark:hover:bg-border-dark font-bold rounded-lg transition-colors text-sm"
+            className="flex-1 lg:w-full py-2.5 lg:py-3 px-4 bg-transparent border border-[#e0e0e0] dark:border-border-dark text-text-secondary-light dark:text-text-secondary-dark hover:bg-[#e2e8f0] dark:hover:bg-border-dark font-bold rounded-lg transition-colors text-xs lg:text-sm"
           >
-            Clear Selection
+            Clear
           </button>
         </div>
       </div>

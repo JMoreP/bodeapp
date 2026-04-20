@@ -45,7 +45,10 @@ export const useCart = (config: Config) => {
       const unitPriceCost = item.bulkCost / item.unitsPerBulk;
       const unitSalePriceUsd = unitPriceCost * (1 + item.profitMargin);
 
-      const appliedDiscount = item.cartQuantity >= 6 ? config.discountRate : 0;
+      const appliedDiscount = (item.discountThreshold && item.cartQuantity >= item.discountThreshold) 
+        ? (item.discountRate || 0) 
+        : 0;
+        
       const finalUnitSalePrice = unitSalePriceUsd * (1 - appliedDiscount);
 
       totalUsd += finalUnitSalePrice * item.cartQuantity;
@@ -54,7 +57,7 @@ export const useCart = (config: Config) => {
     const totalBs = totalUsd * config.exchangeRate;
 
     return { totalUsd, totalBs };
-  }, [cartItems, config]);
+  }, [cartItems, config.exchangeRate]);
 
   const finalizeSale = async () => {
     if (cartItems.length === 0) return;

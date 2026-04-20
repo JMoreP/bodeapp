@@ -42,8 +42,8 @@ export const ProductTable: React.FC<ProductTableProps> = ({
                 <tr
                   key={product.id}
                   className={`group hover:bg-[#f8f9fa] dark:hover:bg-[#243420] transition-colors ${isSelected
-                      ? 'bg-[#f0f9ff]/50 dark:bg-[#2c4724]/30 border-l-4 border-l-primary'
-                      : 'border-l-4 border-l-transparent'
+                    ? 'bg-[#f0f9ff]/50 dark:bg-[#2c4724]/30 border-l-4 border-l-primary'
+                    : 'border-l-4 border-l-transparent'
                     }`}
                 >
                   <td className="px-6 py-4">
@@ -89,8 +89,8 @@ export const ProductTable: React.FC<ProductTableProps> = ({
                   <td className="px-6 py-4 text-right">
                     <span
                       className={`font-bold text-sm ${isSelected
-                          ? 'text-[#111418] dark:text-white'
-                          : 'text-text-secondary-light dark:text-text-secondary-light'
+                        ? 'text-[#111418] dark:text-white'
+                        : 'text-text-secondary-light dark:text-text-secondary-light'
                         }`}
                     >
                       {subtotalBs.toLocaleString('en-US', {

@@ -17,7 +17,9 @@ export const InventoryForm: React.FC<Props> = ({ onClose, categories, editingPro
     bulkCost: '',
     unitsPerBulk: '',
     profitMargin: '',
-    stock: ''
+    stock: '',
+    discountThreshold: '',
+    discountRate: ''
   });
 
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -30,7 +32,9 @@ export const InventoryForm: React.FC<Props> = ({ onClose, categories, editingPro
         bulkCost: editingProduct.bulkCost.toString(),
         unitsPerBulk: editingProduct.unitsPerBulk.toString(),
         profitMargin: (editingProduct.profitMargin * 100).toString(),
-        stock: editingProduct.stock.toString()
+        stock: editingProduct.stock.toString(),
+        discountThreshold: editingProduct.discountThreshold?.toString() || '',
+        discountRate: editingProduct.discountRate ? (editingProduct.discountRate * 100).toString() : ''
       });
     }
   }, [editingProduct]);
@@ -68,6 +72,8 @@ export const InventoryForm: React.FC<Props> = ({ onClose, categories, editingPro
         unitsPerBulk: parseInt(formData.unitsPerBulk) || 1,
         profitMargin: (parseFloat(formData.profitMargin) || 0) / 100,
         stock: parseInt(formData.stock) || 0,
+        discountThreshold: formData.discountThreshold ? parseInt(formData.discountThreshold) : null,
+        discountRate: formData.discountRate ? (parseFloat(formData.discountRate) / 100) : null
       };
 
       if (editingProduct && editingProduct.id) {
@@ -144,6 +150,22 @@ export const InventoryForm: React.FC<Props> = ({ onClose, categories, editingPro
                     Bulto
                   </button>
                 )}
+              </div>
+            </div>
+            {/* Nuevos campos de descuento */}
+            <div className="col-span-1 md:col-span-2 grid grid-cols-2 gap-3 sm:gap-5 border-t border-slate-100 pt-3 sm:pt-5 mt-1 sm:mt-2">
+              <div className="col-span-2">
+                <h3 className="text-[10px] sm:text-xs font-black text-blue-600 uppercase tracking-widest mb-2 sm:mb-4">Configuración de Descuento (Opcional)</h3>
+              </div>
+              <div>
+                <label className="block text-[11px] sm:text-sm font-semibold text-slate-700 mb-0.5 sm:mb-1">Cantidad para Descuento</label>
+                <input type="number" name="discountThreshold" value={formData.discountThreshold} onChange={handleChange} className="w-full p-2 sm:p-3 text-xs sm:text-base bg-slate-50 border border-slate-200 rounded-lg sm:rounded-xl focus:ring-2 focus:ring-blue-500 outline-none text-black" placeholder="Ej. 6" />
+                <span className="text-[9px] sm:text-[10px] text-slate-400 mt-1 block">Mínimo de unidades para aplicar</span>
+              </div>
+              <div>
+                <label className="block text-[11px] sm:text-sm font-semibold text-slate-700 mb-0.5 sm:mb-1">% de Descuento</label>
+                <input type="number" name="discountRate" value={formData.discountRate} onChange={handleChange} className="w-full p-2 sm:p-3 text-xs sm:text-base bg-slate-50 border border-slate-200 rounded-lg sm:rounded-xl focus:ring-2 focus:ring-blue-500 outline-none text-black" placeholder="Ej. 5 (para 5%)" />
+                <span className="text-[9px] sm:text-[10px] text-slate-400 mt-1 block">Porcentaje a rebajar</span>
               </div>
             </div>
           </div>
