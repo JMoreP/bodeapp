@@ -6,9 +6,10 @@ interface Props {
   config: Config;
   onAdd: (product: Product) => void;
   onEdit: (product: Product) => void;
+  isSelected?: boolean;
 }
 
-export const ProductCard: React.FC<Props> = ({ product, config, onAdd, onEdit }) => {
+export const ProductCard: React.FC<Props> = ({ product, config, onAdd, onEdit, isSelected }) => {
   const unitPriceCost = product.bulkCost / product.unitsPerBulk;
   const salePriceUsd = unitPriceCost * (1 + product.profitMargin);
   const salePriceBs = salePriceUsd * config.exchangeRate;
@@ -17,7 +18,7 @@ export const ProductCard: React.FC<Props> = ({ product, config, onAdd, onEdit })
 
   return (
     <div
-      className={`bg-white border-b border-slate-200 p-2 sm:p-4 flex items-center justify-between gap-1 sm:gap-4 transition-colors ${!isOutOfStock ? 'hover:bg-slate-50' : 'bg-slate-50 opacity-90'}`}
+      className={`bg-white border-b border-slate-200 p-2 sm:p-4 flex items-center justify-between gap-1 sm:gap-4 transition-all relative ${!isOutOfStock ? 'hover:bg-slate-50' : 'bg-slate-50 opacity-90'} ${isSelected ? 'ring-2 ring-blue-500 bg-blue-50/30 z-10 scale-[1.01] shadow-md' : ''}`}
     >
       <div className="flex items-center gap-2 sm:gap-4 flex-1 min-w-0">
         <div className="w-8 h-8 sm:w-12 sm:h-12 bg-slate-100 rounded-lg flex items-center justify-center text-slate-500 font-bold uppercase shrink-0 text-xs sm:text-base">

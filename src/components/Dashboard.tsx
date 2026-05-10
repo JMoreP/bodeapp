@@ -20,8 +20,108 @@ export const Dashboard: React.FC = () => {
   const [inventoryCategoryFilter, setInventoryCategoryFilter] = useState('All');
   const [isEditingRate, setIsEditingRate] = useState(false);
   const [manualRate, setManualRate] = useState('');
+  const [selectedIndex, setSelectedIndex] = useState(-1);
+  const searchInputRef = React.useRef<HTMLInputElement>(null);
 
   const { cartItems, addToCart, removeFromCart, updateQuantity, totals, finalizeSale, clearCart } = useCart(config);
+
+  const filteredProducts = useMemo(() => {
+    const query = searchQuery.trim().toLowerCase();
+    const result = query 
+      ? products.filter(p => p.name.toLowerCase().includes(query) || p.category.toLowerCase().includes(query))
+      : [...products].sort((a, b) => b.popularity - a.popularity);
+    return result;
+  }, [products, searchQuery]);
+
+  useEffect(() => {
+    setSelectedIndex(-1);
+  }, [searchQuery, activeTab]);
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Don't trigger if user is typing in an input (except for specific cases)
+      const isInput = e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement;
+      
+      // Global Shortcuts
+      if (e.key === '/') {
+        e.preventDefault();
+        searchInputRef.current?.focus();
+        return;
+      }
+      if (e.key === '1') { setActiveTab('sales'); return; }
+      if (e.key === '2') { setActiveTab('inventory'); return; }
+      if (e.key === '3') { setActiveTab('debts'); return; }
+
+      if (activeTab === 'sales') {
+        if (e.key === 'Enter') {
+          e.preventDefault();
+          if (selectedIndex >= 0 && filteredProducts[selectedIndex]) {
+            addToCart(filteredProducts[selectedIndex]);
+            setSearchQuery('');
+            searchInputRef.current?.blur();
+          } else if (filteredProducts.length > 0 && searchQuery) {
+            addToCart(filteredProducts[0]);
+            setSearchQuery('');
+            searchInputRef.current?.blur();
+          } else if (cartItems.length > 0 && !searchQuery) {
+            finalizeSale();
+          }
+          return;
+        }
+        if (e.key === 'Escape') {
+          if (isInput) {
+            setSearchQuery('');
+            searchInputRef.current?.blur();
+          } else {
+            clearCart();
+          }
+          return;
+        }
+        if (e.key === 'ArrowDown') {
+          e.preventDefault();
+          if (isInput) searchInputRef.current?.blur();
+          setSelectedIndex(prev => Math.min(prev + 1, filteredProducts.length - 1));
+          return;
+        }
+        if (e.key === 'ArrowUp') {
+          e.preventDefault();
+          setSelectedIndex(prev => Math.max(prev - 1, 0));
+          return;
+        }
+        if ((e.key === '+' || e.key === ' ') && (selectedIndex >= 0 || !isInput)) {
+          e.preventDefault();
+          const targetIndex = selectedIndex >= 0 ? selectedIndex : 0;
+          if (filteredProducts[targetIndex]) {
+            addToCart(filteredProducts[targetIndex]);
+            if (isInput) {
+              setSearchQuery('');
+              searchInputRef.current?.blur();
+            }
+          }
+          return;
+        }
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [activeTab, cartItems, filteredProducts, selectedIndex, finalizeSale, clearCart, addToCart]);
+
+  const inventoryProducts = useMemo(() => {
+    let filtered = products;
+    if (inventoryCategoryFilter !== 'All') {
+      filtered = filtered.filter(p => p.category === inventoryCategoryFilter);
+    }
+    const query = searchQuery.trim().toLowerCase();
+    if (query) {
+      filtered = filtered.filter(p => p.name.toLowerCase().includes(query) || p.category.toLowerCase().includes(query));
+    }
+    return filtered;
+  }, [products, inventoryCategoryFilter, searchQuery]);
+
+  const uniqueCategories = useMemo(() => {
+    const cats = new Set(products.map(p => p.category));
+    return Array.from(cats);
+  }, [products]);
 
   useEffect(() => {
     const unsubscribeProducts = onSnapshot(collection(db, 'products'), (snapshot) => {
@@ -40,7 +140,6 @@ export const Dashboard: React.FC = () => {
       }
     });
 
-    // Solo buscar si no hay tasa configurada inicialmente
     fetchOfficialRate(false);
 
     return () => {
@@ -80,26 +179,6 @@ export const Dashboard: React.FC = () => {
     }
   };
 
-  // Filtrado de Ventas (por nombre)
-  const filteredProducts = useMemo(() => {
-    if (!searchQuery.trim()) {
-      return [...products].sort((a, b) => b.popularity - a.popularity);
-    }
-    const lowerQuery = searchQuery.toLowerCase();
-    return products.filter(p => p.name.toLowerCase().includes(lowerQuery) || p.category.toLowerCase().includes(lowerQuery));
-  }, [products, searchQuery]);
-
-  // Filtrado de Inventario (por Categoría)
-  const inventoryProducts = useMemo(() => {
-    if (inventoryCategoryFilter === 'All') return products;
-    return products.filter(p => p.category === inventoryCategoryFilter);
-  }, [products, inventoryCategoryFilter]);
-
-  const uniqueCategories = useMemo(() => {
-    const cats = new Set(products.map(p => p.category));
-    return Array.from(cats);
-  }, [products]);
-
   const handleEditClick = (product: Product) => {
     setEditingProduct(product);
     setShowInventoryModal(true);
@@ -108,7 +187,6 @@ export const Dashboard: React.FC = () => {
   const handleDeleteProduct = async (productId: string) => {
     try {
       await deleteDoc(doc(db, 'products', productId));
-      // No alertar en éxito porque firebase actualiza la UI automáticamente
     } catch (error) {
       console.error('Error al eliminar:', error);
       toast.error('Error eliminando el producto');
@@ -121,11 +199,11 @@ export const Dashboard: React.FC = () => {
   };
 
   return (
-    <div className="h-screen bg-slate-50 flex flex-col md:flex-row font-sans overflow-hidden">
+    <div className="h-screen bg-slate-50 flex flex-col md:flex-row font-display overflow-hidden select-none">
       <Toaster position="bottom-right" toastOptions={{ className: 'text-sm font-bold shadow-xl rounded-xl', duration: 4000 }} />
 
       <div className="flex-1 flex flex-col overflow-hidden relative">
-        <header className="bg-white border-b border-slate-200 px-6 py-4 flex flex-col sm:flex-row gap-4 sm:gap-0 justify-between items-center z-10 shadow-sm shrink-0">
+        <header className="bg-white border-b border-slate-200 px-6 py-4 flex flex-col sm:flex-row gap-4 sm:gap-0 justify-between items-center z-30 shadow-sm shrink-0">
           <div className="flex items-center gap-6">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 bg-slate-800 rounded-xl flex items-center justify-center text-white font-black text-xl shadow-md">
@@ -135,24 +213,9 @@ export const Dashboard: React.FC = () => {
             </div>
 
             <div className="flex bg-slate-100 p-1 rounded-xl w-full sm:w-auto overflow-x-auto hide-scrollbar">
-              <button
-                onClick={() => setActiveTab('sales')}
-                className={`px-3 sm:px-4 py-2 rounded-lg font-bold text-xs sm:text-sm transition-all whitespace-nowrap ${activeTab === 'sales' ? 'bg-white text-blue-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
-              >
-                Ventas
-              </button>
-              <button
-                onClick={() => setActiveTab('inventory')}
-                className={`px-3 sm:px-4 py-2 rounded-lg font-bold text-xs sm:text-sm transition-all whitespace-nowrap ${activeTab === 'inventory' ? 'bg-white text-blue-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
-              >
-                Inventario
-              </button>
-              <button
-                onClick={() => setActiveTab('debts')}
-                className={`px-3 sm:px-4 py-2 rounded-lg font-bold text-xs sm:text-sm transition-all whitespace-nowrap ${activeTab === 'debts' ? 'bg-white text-blue-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
-              >
-                Deudas
-              </button>
+              <button onClick={() => { setActiveTab('sales'); setSearchQuery(''); }} className={`px-3 sm:px-4 py-2 rounded-lg font-bold text-xs sm:text-sm transition-all whitespace-nowrap ${activeTab === 'sales' ? 'bg-white text-blue-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}>Ventas</button>
+              <button onClick={() => { setActiveTab('inventory'); setSearchQuery(''); }} className={`px-3 sm:px-4 py-2 rounded-lg font-bold text-xs sm:text-sm transition-all whitespace-nowrap ${activeTab === 'inventory' ? 'bg-white text-blue-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}>Inventario</button>
+              <button onClick={() => { setActiveTab('debts'); setSearchQuery(''); }} className={`px-3 sm:px-4 py-2 rounded-lg font-bold text-xs sm:text-sm transition-all whitespace-nowrap ${activeTab === 'debts' ? 'bg-white text-blue-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}>Deudas</button>
             </div>
           </div>
 
@@ -162,47 +225,25 @@ export const Dashboard: React.FC = () => {
               <div className="flex items-center gap-1.5">
                 {isEditingRate ? (
                   <div className="flex items-center gap-1">
-                    <input
-                      type="number" step="0.01"
-                      value={manualRate} onChange={(e) => setManualRate(e.target.value)}
-                      className="w-20 p-1 border border-slate-300 rounded text-sm text-slate-800 outline-none"
-                    />
-                    <button onClick={handleSaveManualRate} className="text-emerald-600 bg-emerald-50 p-1 rounded hover:bg-emerald-100" title="Guardar">
-                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path></svg>
-                    </button>
-                    <button onClick={() => setIsEditingRate(false)} className="text-slate-400 hover:text-red-500 p-1" title="Cancelar">
-                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path></svg>
-                    </button>
+                    <input type="number" step="0.01" value={manualRate} onChange={(e) => setManualRate(e.target.value)} className="w-20 p-1 border border-slate-300 rounded text-sm text-slate-800 outline-none" />
+                    <button onClick={handleSaveManualRate} className="text-emerald-600 bg-emerald-50 p-1 rounded hover:bg-emerald-100"><svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path></svg></button>
+                    <button onClick={() => setIsEditingRate(false)} className="text-slate-400 hover:text-red-500 p-1"><svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path></svg></button>
                   </div>
                 ) : (
                   <>
                     {isLoadingRate ? (
                       <div className="w-4 h-4 border-2 border-emerald-500 border-t-transparent rounded-full animate-spin"></div>
                     ) : (
-                      <span
-                        className="text-emerald-600 font-black cursor-pointer hover:underline"
-                        title="Clic para editar manualmente"
-                        onClick={() => {
-                          setManualRate(config.exchangeRate.toString());
-                          setIsEditingRate(true);
-                        }}
-                      >
-                        Bs. {config.exchangeRate.toFixed(2)}
-                      </span>
+                      <span className="text-emerald-600 font-black cursor-pointer hover:underline" onClick={() => { setManualRate(config.exchangeRate.toString()); setIsEditingRate(true); }}>Bs. {config.exchangeRate.toFixed(2)}</span>
                     )}
-                    <button onClick={() => fetchOfficialRate(true)} className="text-slate-400 hover:text-emerald-600 transition-colors ml-1" title="Actualizar desde BCV API">
-                      <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
-                    </button>
+                    <button onClick={() => fetchOfficialRate(true)} className="text-slate-400 hover:text-emerald-600 transition-colors ml-1"><svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg></button>
                   </>
                 )}
               </div>
             </div>
 
             {activeTab === 'inventory' && (
-              <button
-                onClick={() => setShowInventoryModal(true)}
-                className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-xl font-bold transition-all shadow-sm hover:shadow-blue-200 active:scale-95 text-sm"
-              >
+              <button onClick={() => setShowInventoryModal(true)} className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-xl font-bold transition-all shadow-sm active:scale-95 text-sm">
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v16m8-8H4"></path></svg>
                 <span>Añadir</span>
               </button>
@@ -210,77 +251,90 @@ export const Dashboard: React.FC = () => {
           </div>
         </header>
 
-        <div className="flex-1 overflow-y-auto p-4 md:p-6 pb-24 md:pb-6">
-
+        <div className="flex-1 flex flex-col min-h-0 overflow-hidden relative">
           {activeTab === 'sales' ? (
             <>
-              <div className="mb-3 sm:mb-6 relative max-w-2xl mx-auto">
-                <input
-                  type="text"
-                  placeholder="Buscar producto por nombre..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full p-2.5 sm:p-4 pl-9 sm:pl-12 bg-white border border-slate-200 rounded-xl sm:rounded-2xl shadow-sm text-sm sm:text-lg focus:ring-4 focus:ring-blue-100 focus:border-blue-500 outline-none transition-all text-slate-900"
-                />
-                <svg className="w-5 h-5 sm:w-6 sm:h-6 text-slate-400 absolute left-3 sm:left-4 top-3 sm:top-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+              <div className="p-3 sm:p-6 pb-2 sticky top-0 z-20 bg-slate-50/90 backdrop-blur-sm border-b border-slate-200/50">
+                <div className="relative max-w-2xl mx-auto">
+                  <input
+                    ref={searchInputRef}
+                    type="text"
+                    placeholder="Buscar producto... (Presiona /)"
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="w-full p-3 sm:p-4 pl-10 sm:pl-12 bg-white border border-slate-200 rounded-xl sm:rounded-2xl shadow-sm text-sm sm:text-lg focus:ring-4 focus:ring-blue-100 focus:border-blue-500 outline-none transition-all text-slate-900"
+                  />
+                  <svg className="w-5 h-5 sm:w-6 sm:h-6 text-slate-400 absolute left-3 sm:left-4 top-1/2 -translate-y-1/2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+                </div>
               </div>
 
-              <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-sm max-w-5xl mx-auto">
-                {filteredProducts.map(product => (
-                  <ProductCard
-                    key={product.id}
-                    product={product}
-                    config={config}
-                    onAdd={addToCart}
-                    onEdit={handleEditClick}
-                  />
-                ))}
-                {filteredProducts.length === 0 && (
-                  <div className="p-16 text-center">
-                    <div className="w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-4 text-slate-400">
-                      <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4"></path></svg>
+              <div className="flex-1 overflow-y-auto p-4 md:p-6 pt-0 pb-24 md:pb-6">
+                <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-sm max-w-5xl mx-auto mt-4">
+                  {filteredProducts.map((product, index) => (
+                    <ProductCard 
+                      key={product.id} 
+                      product={product} 
+                      config={config} 
+                      onAdd={addToCart} 
+                      onEdit={handleEditClick}
+                      isSelected={index === selectedIndex}
+                    />
+                  ))}
+                  {filteredProducts.length === 0 && (
+                    <div className="p-16 text-center text-slate-400">
+                      <p className="font-bold">No se encontraron productos.</p>
                     </div>
-                    <h3 className="text-xl font-bold text-slate-700 mb-1">No hay productos</h3>
-                    <p className="text-slate-500">
-                      {products.length === 0 ? 'Añade productos en el inventario primero.' : 'No se encontraron resultados.'}
-                    </p>
-                  </div>
-                )}
+                  )}
+                </div>
               </div>
             </>
           ) : activeTab === 'inventory' ? (
-            <div className="animate-in fade-in duration-300">
-              <div className="mb-3 sm:mb-4 flex flex-col sm:flex-row justify-between items-start sm:items-end gap-2 sm:gap-4">
-                <div>
-                  <h2 className="text-lg sm:text-2xl font-bold text-slate-800 leading-tight">Inventario General</h2>
-                  <p className="text-xs sm:text-sm text-slate-500">Administración de stock y precios</p>
-                </div>
+            <div className="flex-1 flex flex-col min-h-0 animate-in fade-in duration-300">
+              <div className="p-4 md:p-6 pb-3 sticky top-0 z-20 bg-slate-50/90 backdrop-blur-sm border-b border-slate-200/50">
+                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+                  <div>
+                    <h2 className="text-xl font-black text-slate-800">Inventario General</h2>
+                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Control de Stock y Precios</p>
+                  </div>
 
-                <div className="flex items-center gap-2 sm:gap-3 bg-white p-1.5 sm:p-2 border border-slate-200 rounded-lg sm:rounded-xl shadow-sm w-full sm:w-auto">
-                  <span className="text-[10px] sm:text-sm font-semibold text-slate-600 px-1 sm:px-2">Categoría:</span>
-                  <select
-                    value={inventoryCategoryFilter}
-                    onChange={(e) => setInventoryCategoryFilter(e.target.value)}
-                    className="flex-1 sm:flex-none bg-slate-50 border border-slate-200 text-slate-800 text-[10px] sm:text-sm rounded-md sm:rounded-lg focus:ring-blue-500 focus:border-blue-500 p-1.5 sm:p-2.5 outline-none font-semibold cursor-pointer"
-                  >
-                    <option value="All">Todas las categorías</option>
-                    {uniqueCategories.map(cat => (
-                      <option key={cat} value={cat}>{cat}</option>
-                    ))}
-                  </select>
+                  <div className="flex items-center gap-2 w-full sm:w-auto">
+                    <div className="relative flex-1 sm:w-64">
+                      <input
+                        type="text"
+                        placeholder="Buscar en inventario..."
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        className="w-full pl-9 pr-4 py-2.5 bg-white border border-slate-200 text-slate-800 text-sm rounded-xl shadow-sm focus:ring-4 focus:ring-blue-100 outline-none transition-all font-bold"
+                      />
+                      <svg className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+                    </div>
+
+                    <select
+                      value={inventoryCategoryFilter}
+                      onChange={(e) => setInventoryCategoryFilter(e.target.value)}
+                      className="bg-white border border-slate-200 text-slate-800 text-xs rounded-xl focus:ring-blue-500 p-2.5 outline-none font-black cursor-pointer shadow-sm"
+                    >
+                      <option value="All">Todas</option>
+                      {uniqueCategories.map(cat => <option key={cat} value={cat}>{cat}</option>)}
+                    </select>
+                  </div>
                 </div>
               </div>
 
-              <InventoryTable
-                products={inventoryProducts}
-                onEdit={handleEditClick}
-                onDelete={handleDeleteProduct}
-              />
+              <div className="flex-1 overflow-y-auto p-4 md:p-6 pt-4 pb-24 md:pb-6">
+                <InventoryTable
+                  products={inventoryProducts}
+                  onEdit={handleEditClick}
+                  onDelete={handleDeleteProduct}
+                  exchangeRate={config.exchangeRate}
+                />
+              </div>
             </div>
           ) : activeTab === 'debts' ? (
-            <DebtsTab config={config} />
+            <div className="flex-1 overflow-y-auto p-4 md:p-6 pb-24 md:pb-6">
+              <DebtsTab config={config} products={products} />
+            </div>
           ) : null}
-
         </div>
       </div>
 
@@ -289,81 +343,64 @@ export const Dashboard: React.FC = () => {
           onClose={handleCloseModal}
           categories={uniqueCategories}
           editingProduct={editingProduct}
+          exchangeRate={config.exchangeRate}
+          existingProducts={products}
         />
       )}
 
       {activeTab === 'sales' && (
-        <div className="w-full md:w-96 bg-white border-l border-slate-200 shadow-[0_-10px_40px_-15px_rgba(0,0,0,0.1)] flex flex-col z-20 absolute bottom-0 md:relative md:h-screen max-h-[45vh] md:max-h-screen rounded-t-xl md:rounded-none">
-          <div className="p-3 sm:p-5 border-b border-slate-100 bg-white flex justify-between items-center shrink-0">
-            <div>
-              <h2 className="text-sm sm:text-xl font-black text-slate-800 leading-tight">Cuenta de Cliente</h2>
-              <p className="text-[10px] sm:text-sm text-slate-500 font-medium">{cartItems.length} {cartItems.length === 1 ? 'producto' : 'productos'}</p>
+        <div className="w-full md:w-80 bg-white border-l border-slate-200 shadow-[0_-10px_40px_-15px_rgba(0,0,0,0.1)] flex flex-col z-40 absolute bottom-0 md:relative md:h-screen max-h-[38vh] md:max-h-screen rounded-t-2xl md:rounded-none md:mt-4">
+          <div className="p-2 sm:p-3 border-b border-slate-100 bg-white flex justify-between items-center shrink-0">
+            <div className="leading-tight">
+              <h2 className="text-xs font-black text-slate-900">CUENTA CLIENTE</h2>
+              <p className="text-[8px] text-slate-900 font-black uppercase tracking-tight">{cartItems.length} PROD.</p>
             </div>
-            <div className="text-right flex flex-col items-end">
-              <span className="text-sm sm:text-xl font-black text-slate-900">${totals.totalUsd.toFixed(2)}</span>
-              <span className="text-[10px] sm:text-sm font-bold text-emerald-600">Bs. {totals.totalBs.toFixed(2)}</span>
+            <div className="text-right">
+              <span className="text-lg font-black text-slate-900">${totals.totalUsd.toFixed(2)}</span>
+              <p className="text-[9px] font-bold text-emerald-600">Bs. {totals.totalBs.toFixed(0)}</p>
             </div>
           </div>
 
-          <div className="flex-1 overflow-y-auto p-2 sm:p-4 space-y-2 sm:space-y-3 bg-slate-50/50">
+          <div className="flex-1 overflow-y-auto p-1.5 space-y-1 bg-slate-50/30">
             {cartItems.length === 0 ? (
-              <div className="h-full flex flex-col items-center justify-center text-slate-400 space-y-2 sm:space-y-4">
-                <svg className="w-8 h-8 sm:w-12 sm:h-12 opacity-30" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"></path></svg>
-                <p className="text-xs sm:text-sm font-medium">Agrega productos</p>
+              <div className="h-full flex flex-col items-center justify-center text-slate-300 py-6">
+                <svg className="w-6 h-6 mb-1 opacity-20" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"></path></svg>
+                <p className="text-[8px] font-black uppercase tracking-widest">Vacío</p>
               </div>
             ) : (
               cartItems.map(item => {
                 const hasDiscount = item.discountThreshold && item.cartQuantity >= item.discountThreshold;
                 const appliedRate = hasDiscount ? (item.discountRate || 0) : 0;
-                
                 const itemUsd = (item.bulkCost / item.unitsPerBulk) * (1 + item.profitMargin) * item.cartQuantity * (1 - appliedRate);
                 const itemBs = itemUsd * config.exchangeRate;
-
                 return (
-                  <div key={item.id} className="bg-white p-2 sm:p-3 rounded-lg sm:rounded-xl border border-slate-200 shadow-sm flex gap-2 sm:gap-3 items-center">
+                  <div key={item.id} className="bg-white p-1.5 rounded-lg border border-slate-100 shadow-sm flex items-center gap-1.5">
                     <div className="flex-1 min-w-0">
-                      <h4 className="font-bold text-slate-800 text-[11px] sm:text-sm leading-tight mb-0.5 truncate">{item.name}</h4>
-                      <div className="text-[9px] sm:text-xs font-semibold text-emerald-600 mb-1">
-                        {hasDiscount ? `¡Desc. ${(appliedRate * 100)}%!` : ''}
-                      </div>
-                      <div className="flex items-center gap-1 sm:gap-2">
-                        <button onClick={() => updateQuantity(item.id!, item.cartQuantity - 1)} className="w-5 h-5 sm:w-7 sm:h-7 bg-slate-50 border border-slate-200 rounded flex items-center justify-center text-slate-600 hover:bg-slate-200 font-bold transition-colors leading-none">-</button>
-                        <span className="font-black text-[11px] sm:text-sm w-3 sm:w-4 text-center text-slate-700">{item.cartQuantity}</span>
-                        <button onClick={() => updateQuantity(item.id!, item.cartQuantity + 1)} className="w-5 h-5 sm:w-7 sm:h-7 bg-slate-50 border border-slate-200 rounded flex items-center justify-center text-slate-600 hover:bg-slate-200 font-bold transition-colors leading-none">+</button>
+                      <h4 className="font-black text-slate-800 text-[9px] truncate uppercase leading-none">{item.name}</h4>
+                      <div className="flex items-center gap-1 mt-1">
+                        <button onClick={() => updateQuantity(item.id!, item.cartQuantity - 1)} className="w-4 h-4 bg-slate-100 rounded-md flex items-center justify-center text-black font-black text-[8px]">-</button>
+                        <span className="font-black text-[9px] w-3 text-center text-black">{item.cartQuantity}</span>
+                        <button onClick={() => updateQuantity(item.id!, item.cartQuantity + 1)} className="w-4 h-4 bg-slate-100 rounded-md flex items-center justify-center text-black font-black text-[8px]">+</button>
                       </div>
                     </div>
-                    <div className="flex items-center gap-2 sm:gap-3 shrink-0">
-                      <div className="flex flex-col items-end">
-                        <span className="text-[11px] sm:text-sm font-black text-slate-800">${itemUsd.toFixed(2)}</span>
-                        <span className="text-[9px] sm:text-xs font-bold text-emerald-600">Bs. {itemBs.toFixed(2)}</span>
-                      </div>
-                      <button onClick={() => removeFromCart(item.id!)} className="text-red-400 hover:text-red-600 transition-colors p-1.5 bg-red-50 rounded-md shrink-0">
-                        <svg className="w-3.5 h-3.5 sm:w-4 sm:h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
-                      </button>
+                    
+                    <div className="flex flex-col text-right px-1 border-l border-slate-50 min-w-[50px]">
+                      <p className="text-[10px] font-black text-slate-900 leading-none">${itemUsd.toFixed(2)}</p>
+                      <p className="text-[7px] font-bold text-emerald-600">Bs. {itemBs.toFixed(0)}</p>
                     </div>
+
+                    <button onClick={() => removeFromCart(item.id!)} className="w-6 h-6 flex items-center justify-center text-slate-200 hover:text-red-500 transition-colors shrink-0">
+                      <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                    </button>
                   </div>
                 );
               })
             )}
           </div>
 
-          <div className="p-3 sm:p-5 bg-white border-t border-slate-200 shrink-0">
-            <button
-              onClick={() => finalizeSale()}
-              disabled={cartItems.length === 0}
-              className={`w-full py-2 sm:py-3.5 rounded-lg sm:rounded-xl text-xs sm:text-lg font-black transition-all ${cartItems.length === 0
-                ? 'bg-slate-100 text-slate-400 cursor-not-allowed'
-                : 'bg-emerald-500 hover:bg-emerald-600 text-white shadow-md shadow-emerald-200 hover:shadow-emerald-300 active:scale-95'
-                }`}
-            >
-              Finalizar Venta
-            </button>
-
-            {cartItems.length > 0 && (
-              <button onClick={clearCart} className="w-full mt-1.5 sm:mt-2 py-1.5 sm:py-2 text-slate-400 hover:text-slate-600 font-bold text-[10px] sm:text-sm transition-colors rounded-lg hover:bg-slate-50">
-                Vaciar carrito
-              </button>
-            )}
+          <div className="p-2 bg-white border-t border-slate-100 shrink-0">
+            <button onClick={() => finalizeSale()} disabled={cartItems.length === 0} className={`w-full py-2.5 rounded-lg font-black text-xs transition-all ${cartItems.length === 0 ? 'bg-slate-100 text-slate-400' : 'bg-emerald-500 hover:bg-emerald-600 text-white shadow-lg active:scale-95'}`}>Finalizar Venta</button>
+            {cartItems.length > 0 && <button onClick={clearCart} className="w-full mt-1.5 text-slate-400 hover:text-slate-600 font-bold text-[8px] uppercase tracking-widest">Vaciar</button>}
           </div>
         </div>
       )}
