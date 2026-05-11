@@ -129,6 +129,26 @@ export const DebtsTab: React.FC<Props> = ({ config, products }) => {
     }
   };
 
+  const openAbonoModal = (debt: Debt) => {
+    setAbonoModal({ isOpen: true, debt });
+    setAbonoAmountUsd('');
+    setAbonoAmountBs('');
+  };
+
+  const handleAbonoUsdChange = (val: string) => {
+    setAbonoAmountUsd(val);
+    if (!val) { setAbonoAmountBs(''); return; }
+    const num = parseFloat(val);
+    if (!isNaN(num)) setAbonoAmountBs((num * config.exchangeRate).toFixed(2));
+  };
+
+  const handleAbonoBsChange = (val: string) => {
+    setAbonoAmountBs(val);
+    if (!val) { setAbonoAmountUsd(''); return; }
+    const num = parseFloat(val);
+    if (!isNaN(num)) setAbonoAmountUsd((num / config.exchangeRate).toFixed(2));
+  };
+
   const confirmAbono = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!abonoModal.debt) return;

@@ -27,7 +27,7 @@ export const Dashboard: React.FC = () => {
 
   const filteredProducts = useMemo(() => {
     const query = searchQuery.trim().toLowerCase();
-    const result = query 
+    const result = query
       ? products.filter(p => p.name.toLowerCase().includes(query) || p.category.toLowerCase().includes(query))
       : [...products].sort((a, b) => b.popularity - a.popularity);
     return result;
@@ -41,16 +41,17 @@ export const Dashboard: React.FC = () => {
     const handleKeyDown = (e: KeyboardEvent) => {
       // Don't trigger if user is typing in an input (except for specific cases)
       const isInput = e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement;
-      
+
       // Global Shortcuts
       if (e.key === '/') {
         e.preventDefault();
         searchInputRef.current?.focus();
         return;
       }
-      if (e.key === '1') { setActiveTab('sales'); return; }
-      if (e.key === '2') { setActiveTab('inventory'); return; }
-      if (e.key === '3') { setActiveTab('debts'); return; }
+      // Mejorar Funcion en un futuro
+      // if (e.key === '1') { setActiveTab('sales'); return; } 
+      // if (e.key === '2') { setActiveTab('inventory'); return; }
+      // if (e.key === '3') { setActiveTab('debts'); return; }
 
       if (activeTab === 'sales') {
         if (e.key === 'Enter') {
@@ -271,11 +272,11 @@ export const Dashboard: React.FC = () => {
               <div className="flex-1 overflow-y-auto p-4 md:p-6 pt-0 pb-24 md:pb-6">
                 <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-sm max-w-5xl mx-auto mt-4">
                   {filteredProducts.map((product, index) => (
-                    <ProductCard 
-                      key={product.id} 
-                      product={product} 
-                      config={config} 
-                      onAdd={addToCart} 
+                    <ProductCard
+                      key={product.id}
+                      product={product}
+                      config={config}
+                      onAdd={addToCart}
                       onEdit={handleEditClick}
                       isSelected={index === selectedIndex}
                     />
@@ -383,7 +384,7 @@ export const Dashboard: React.FC = () => {
                         <button onClick={() => updateQuantity(item.id!, item.cartQuantity + 1)} className="w-4 h-4 bg-slate-100 rounded-md flex items-center justify-center text-black font-black text-[8px]">+</button>
                       </div>
                     </div>
-                    
+
                     <div className="flex flex-col text-right px-1 border-l border-slate-50 min-w-[50px]">
                       <p className="text-[10px] font-black text-slate-900 leading-none">${itemUsd.toFixed(2)}</p>
                       <p className="text-[7px] font-bold text-emerald-600">Bs. {itemBs.toFixed(0)}</p>
