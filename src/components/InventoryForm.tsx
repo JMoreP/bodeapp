@@ -3,6 +3,7 @@ import { collection, addDoc, doc, updateDoc } from 'firebase/firestore';
 import { db } from '../../firebase';
 import toast from 'react-hot-toast';
 import { Product } from '../types';
+import { useTenant } from '../contexts/TenantContext';
 
 interface Props {
   onClose: () => void;
@@ -13,6 +14,7 @@ interface Props {
 }
 
 export const InventoryForm: React.FC<Props> = ({ onClose, categories, editingProduct, exchangeRate, existingProducts }) => {
+  const { tenantId } = useTenant();
   const [formData, setFormData] = useState({
     name: '',
     category: '',
@@ -78,7 +80,7 @@ export const InventoryForm: React.FC<Props> = ({ onClose, categories, editingPro
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!formData.name.trim()) return;
+    if (!formData.name.trim() || !tenantId) return;
 
     const nameExists = existingProducts.some(p =>
       p.name.toLowerCase().trim() === formData.name.toLowerCase().trim() &&
@@ -104,10 +106,10 @@ export const InventoryForm: React.FC<Props> = ({ onClose, categories, editingPro
       };
 
       if (editingProduct && editingProduct.id) {
-        await updateDoc(doc(db, 'products', editingProduct.id), productData);
+        await updateDoc(doc(db, 'tenants', tenantId, 'products', editingProduct.id), productData);
         toast.success('¡Producto actualizado!');
       } else {
-        await addDoc(collection(db, 'products'), { ...productData, popularity: 0 });
+        await addDoc(collection(db, 'tenants', tenantId, 'products'), { ...productData, popularity: 0 });
         toast.success('¡Producto registrado!');
       }
       onClose();

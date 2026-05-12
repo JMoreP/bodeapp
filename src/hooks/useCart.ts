@@ -3,8 +3,10 @@ import { doc, writeBatch, increment } from 'firebase/firestore';
 import { db } from '../../firebase';
 import toast from 'react-hot-toast';
 import { Product, CartItem, Config } from '../types';
+import { useTenant } from '../contexts/TenantContext';
 
 export const useCart = (config: Config) => {
+  const { tenantId } = useTenant();
   const [cartItems, setCartItems] = useState<CartItem[]>([]);
 
   const addToCart = (product: Product) => {
@@ -60,7 +62,7 @@ export const useCart = (config: Config) => {
   }, [cartItems, config.exchangeRate]);
 
   const finalizeSale = async () => {
-    if (cartItems.length === 0) return;
+    if (cartItems.length === 0 || !tenantId) return;
 
     try {
       const batch = writeBatch(db);
@@ -68,7 +70,7 @@ export const useCart = (config: Config) => {
       // Descontar inventario y aumentar popularidad por cada producto
       cartItems.forEach(item => {
         if (!item.id) return;
-        const productRef = doc(db, 'products', item.id);
+        const productRef = doc(db, 'tenants', tenantId, 'products', item.id);
         batch.update(productRef, {
           stock: increment(-item.cartQuantity),
           popularity: increment(item.cartQuantity)

@@ -1,6 +1,8 @@
 import React from 'react';
 import ReactDOM from 'react-dom/client';
-import { Dashboard } from './src/components/Dashboard';
+import AppContent from './src/App';
+import { AuthProvider } from './src/contexts/AuthContext';
+import { TenantProvider } from './src/contexts/TenantContext';
 
 const rootElement = document.getElementById('root');
 if (!rootElement) {
@@ -10,6 +12,10 @@ if (!rootElement) {
 const root = ReactDOM.createRoot(rootElement);
 root.render(
   <React.StrictMode>
-    <Dashboard />
+    <AuthProvider>
+      <TenantProvider>
+        <AppContent />
+      </TenantProvider>
+    </AuthProvider>
   </React.StrictMode>
 );

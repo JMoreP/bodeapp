@@ -3,6 +3,7 @@ import { collection, onSnapshot, addDoc, doc, updateDoc, deleteDoc } from 'fireb
 import { db } from '../../firebase';
 import toast from 'react-hot-toast';
 import { Debt, Config, Product } from '../types';
+import { useTenant } from '../contexts/TenantContext';
 
 interface Props {
   config: Config;
@@ -10,6 +11,7 @@ interface Props {
 }
 
 export const DebtsTab: React.FC<Props> = ({ config, products }) => {
+  const { tenantId } = useTenant();
   const [debts, setDebts] = useState<Debt[]>([]);
   const [newClient, setNewClient] = useState('');
   const [newAmountUsd, setNewAmountUsd] = useState('');
@@ -29,14 +31,15 @@ export const DebtsTab: React.FC<Props> = ({ config, products }) => {
   const [deleteModal, setDeleteModal] = useState<{ isOpen: boolean, debtId: string | null }>({ isOpen: false, debtId: null });
   
   useEffect(() => {
-    const unsub = onSnapshot(collection(db, 'debts'), (snap) => {
+    if (!tenantId) return;
+    const unsub = onSnapshot(collection(db, 'tenants', tenantId, 'debts'), (snap) => {
       const data: Debt[] = [];
       snap.forEach(d => data.push({ id: d.id, ...d.data() } as Debt));
       data.sort((a, b) => b.date - a.date);
       setDebts(data);
     });
     return () => unsub();
-  }, []);
+  }, [tenantId]);
 
   const existingClients = useMemo(() => {
     const names = new Set(debts.map(d => d.clientName));
@@ -77,20 +80,20 @@ export const DebtsTab: React.FC<Props> = ({ config, products }) => {
 
   const handleAdd = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newClient.trim() || finalNewDebtUsd <= 0) return toast.error('Datos incompletos');
+    if (!newClient.trim() || finalNewDebtUsd <= 0 || !tenantId) return toast.error('Datos incompletos');
     
     try {
       const existingDebt = debts.find(d => d.clientName.toLowerCase().trim() === newClient.toLowerCase().trim());
 
       if (existingDebt) {
         const newTotal = existingDebt.amountUsd + finalNewDebtUsd;
-        await updateDoc(doc(db, 'debts', existingDebt.id!), { 
+        await updateDoc(doc(db, 'tenants', tenantId, 'debts', existingDebt.id!), { 
           amountUsd: newTotal,
           date: Date.now()
         });
         toast.success(`Añadido a la cuenta de ${existingDebt.clientName}`);
       } else {
-        await addDoc(collection(db, 'debts'), {
+        await addDoc(collection(db, 'tenants', tenantId, 'debts'), {
           clientName: newClient.trim(),
           amountUsd: finalNewDebtUsd,
           date: Date.now()
@@ -116,7 +119,7 @@ export const DebtsTab: React.FC<Props> = ({ config, products }) => {
     
     try {
       const newTotal = addDebtModal.debt.amountUsd + amount;
-      await updateDoc(doc(db, 'debts', addDebtModal.debt.id!), { 
+      await updateDoc(doc(db, 'tenants', tenantId!, 'debts', addDebtModal.debt.id!), { 
         amountUsd: newTotal,
         date: Date.now()
       });
@@ -158,10 +161,10 @@ export const DebtsTab: React.FC<Props> = ({ config, products }) => {
     const newTotal = debt.amountUsd - amount;
     try {
       if (newTotal <= 0) {
-        await deleteDoc(doc(db, 'debts', debt.id!));
+        await deleteDoc(doc(db, 'tenants', tenantId!, 'debts', debt.id!));
         toast.success(`Deuda de ${debt.clientName} saldada`);
       } else {
-        await updateDoc(doc(db, 'debts', debt.id!), { amountUsd: newTotal });
+        await updateDoc(doc(db, 'tenants', tenantId!, 'debts', debt.id!), { amountUsd: newTotal });
         toast.success(`Abono: -$${amount.toFixed(2)}`);
       }
       setAbonoModal({ isOpen: false, debt: null });
@@ -171,9 +174,9 @@ export const DebtsTab: React.FC<Props> = ({ config, products }) => {
   };
 
   const confirmDelete = async () => {
-    if (!deleteModal.debtId) return;
+    if (!deleteModal.debtId || !tenantId) return;
     try {
-      await deleteDoc(doc(db, 'debts', deleteModal.debtId));
+      await deleteDoc(doc(db, 'tenants', tenantId, 'debts', deleteModal.debtId));
       toast.success('Deuda eliminada');
     } catch (err) {
       toast.error('Error al eliminar');

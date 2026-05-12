@@ -1,0 +1,51 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // Function to check if user is Super Admin
+    function isSuperAdmin() {
+      return request.auth != null && request.auth.uid == 'gDsYzOxufdV3KpoD3dwivVu5sM03';
+    }
+
+    // Global Users collection (only Super Admin can read/write everything)
+    // Normal users can read their own status? Usually not needed, they read from their tenant doc
+    match /global/users/{userId} {
+      allow read, write: if isSuperAdmin();
+    }
+
+    // Tenants structure
+    match /tenants/{tenantId} {
+      // Super Admin can do everything
+      // Normal user can read/write their own tenant IF their status is active
+      // (Status check prevents suspended users from accessing their own data)
+      
+      // Read/Write rule for the tenant document itself
+      allow read: if isSuperAdmin() || (request.auth != null && request.auth.uid == tenantId);
+      allow write: if isSuperAdmin() || (request.auth != null && request.auth.uid == tenantId && resource.data.status == 'active');
+
+      // Rules for all subcollections under the tenant
+      match /{document=**} {
+        // We use get(/databases/$(database)/documents/tenants/$(tenantId)).data.status to verify active status
+        // But to avoid extra reads, we can also just trust the claim or if we must:
+        function isTenantActive() {
+          return get(/databases/$(database)/documents/tenants/$(tenantId)).data.status == 'active';
+        }
+
+        allow read, write: if isSuperAdmin() || 
+          (request.auth != null && request.auth.uid == tenantId && isTenantActive());
+      }
+    }
+    
+    // Legacy root collections (Deny all for normal users, allow SuperAdmin for migration purposes)
+    match /products/{document=**} {
+      allow read, write: if isSuperAdmin();
+    }
+    match /config/{document=**} {
+      allow read, write: if isSuperAdmin();
+    }
+    match /debts/{document=**} {
+      allow read, write: if isSuperAdmin();
+    }
+  }
+}

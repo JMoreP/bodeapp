@@ -8,8 +8,10 @@ import { InventoryTable } from './InventoryTable';
 import { DebtsTab } from './DebtsTab';
 import { useCart } from '../hooks/useCart';
 import { Product, Config } from '../types';
+import { useTenant } from '../contexts/TenantContext';
 
 export const Dashboard: React.FC = () => {
+  const { tenantId } = useTenant();
   const [products, setProducts] = useState<Product[]>([]);
   const [config, setConfig] = useState<Config>({ exchangeRate: 36.5 });
   const [searchQuery, setSearchQuery] = useState('');
@@ -125,7 +127,9 @@ export const Dashboard: React.FC = () => {
   }, [products]);
 
   useEffect(() => {
-    const unsubscribeProducts = onSnapshot(collection(db, 'products'), (snapshot) => {
+    if (!tenantId) return;
+
+    const unsubscribeProducts = onSnapshot(collection(db, 'tenants', tenantId, 'products'), (snapshot) => {
       const prods: Product[] = [];
       snapshot.forEach((doc) => {
         prods.push({ id: doc.id, ...doc.data() } as Product);
@@ -133,7 +137,7 @@ export const Dashboard: React.FC = () => {
       setProducts(prods);
     });
 
-    const unsubscribeConfig = onSnapshot(doc(db, 'config', 'global'), (docSnap) => {
+    const unsubscribeConfig = onSnapshot(doc(db, 'tenants', tenantId, 'config', 'global'), (docSnap) => {
       if (docSnap.exists()) {
         const data = docSnap.data() as Config;
         setConfig(prev => ({ ...prev, ...data }));
@@ -147,7 +151,7 @@ export const Dashboard: React.FC = () => {
       unsubscribeProducts();
       unsubscribeConfig();
     };
-  }, []);
+  }, [tenantId]);
 
   const fetchOfficialRate = async (forceUpdate = true) => {
     setIsLoadingRate(true);
@@ -160,7 +164,7 @@ export const Dashboard: React.FC = () => {
         if (forceUpdate) {
           setConfig(prev => ({ ...prev, exchangeRate: officialRate.promedio }));
           setManualRate(officialRate.promedio.toString());
-          await setDoc(doc(db, 'config', 'global'), { exchangeRate: officialRate.promedio }, { merge: true });
+          if (tenantId) await setDoc(doc(db, 'tenants', tenantId, 'config', 'global'), { exchangeRate: officialRate.promedio }, { merge: true });
           toast.success(`Tasa actualizada: Bs. ${officialRate.promedio}`);
         }
       }
@@ -173,9 +177,9 @@ export const Dashboard: React.FC = () => {
 
   const handleSaveManualRate = async () => {
     const rate = parseFloat(manualRate);
-    if (!isNaN(rate) && rate > 0) {
+    if (!isNaN(rate) && rate > 0 && tenantId) {
       setConfig(prev => ({ ...prev, exchangeRate: rate }));
-      await setDoc(doc(db, 'config', 'global'), { exchangeRate: rate }, { merge: true });
+      await setDoc(doc(db, 'tenants', tenantId, 'config', 'global'), { exchangeRate: rate }, { merge: true });
       setIsEditingRate(false);
     }
   };
@@ -186,8 +190,9 @@ export const Dashboard: React.FC = () => {
   };
 
   const handleDeleteProduct = async (productId: string) => {
+    if (!tenantId) return;
     try {
-      await deleteDoc(doc(db, 'products', productId));
+      await deleteDoc(doc(db, 'tenants', tenantId, 'products', productId));
     } catch (error) {
       console.error('Error al eliminar:', error);
       toast.error('Error eliminando el producto');
