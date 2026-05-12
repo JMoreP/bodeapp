@@ -8,26 +8,30 @@ service cloud.firestore {
       return request.auth != null && request.auth.uid == 'gDsYzOxufdV3KpoD3dwivVu5sM03';
     }
 
-    // Global Users collection (only Super Admin can read/write everything)
-    // Normal users can read their own status? Usually not needed, they read from their tenant doc
-    match /global/users/{userId} {
-      allow read, write: if isSuperAdmin();
+    // Global Users collection (For Super Admin listing and users to self-register)
+    match /global/users/list/{userId} {
+      allow read: if isSuperAdmin();
+      allow create: if request.auth != null && request.auth.uid == userId;
+      allow update, delete: if isSuperAdmin();
     }
 
     // Tenants structure
     match /tenants/{tenantId} {
-      // Super Admin can do everything
-      // Normal user can read/write their own tenant IF their status is active
-      // (Status check prevents suspended users from accessing their own data)
-      
-      // Read/Write rule for the tenant document itself
+      // Allow read to self or SuperAdmin
       allow read: if isSuperAdmin() || (request.auth != null && request.auth.uid == tenantId);
-      allow write: if isSuperAdmin() || (request.auth != null && request.auth.uid == tenantId && resource.data.status == 'active');
+      
+      // Allow self-create when registering
+      allow create: if request.auth != null && request.auth.uid == tenantId && request.resource.data.status == 'active';
+      
+      // Allow self-update if active, BUT prevent changing the 'status' field (only super admin can change status)
+      // We check if the incoming status is the same as the existing status.
+      allow update: if isSuperAdmin() || (request.auth != null && request.auth.uid == tenantId && resource.data.status == 'active' && request.resource.data.status == resource.data.status);
+      
+      // Allow delete only to SuperAdmin
+      allow delete: if isSuperAdmin();
 
       // Rules for all subcollections under the tenant
       match /{document=**} {
-        // We use get(/databases/$(database)/documents/tenants/$(tenantId)).data.status to verify active status
-        // But to avoid extra reads, we can also just trust the claim or if we must:
         function isTenantActive() {
           return get(/databases/$(database)/documents/tenants/$(tenantId)).data.status == 'active';
         }

@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { signInWithEmailAndPassword, createUserWithEmailAndPassword } from 'firebase/auth';
-import { auth } from '../../firebase';
+import { writeBatch, doc, serverTimestamp } from 'firebase/firestore';
+import { auth, db } from '../../firebase';
 import toast from 'react-hot-toast';
 
 export const AuthScreen: React.FC = () => {
@@ -19,8 +20,25 @@ export const AuthScreen: React.FC = () => {
         await signInWithEmailAndPassword(auth, email, password);
         toast.success('¡Bienvenido!');
       } else {
-        await createUserWithEmailAndPassword(auth, email, password);
-        toast.success('Cuenta creada exitosamente');
+        const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+        const user = userCredential.user;
+        
+        // Plan B: Crear los documentos de Tenant y Global User directamente desde el Frontend
+        const batch = writeBatch(db);
+        
+        const tenantData = {
+          email: user.email,
+          status: 'active',
+          createdAt: serverTimestamp()
+        };
+
+        batch.set(doc(db, 'tenants', user.uid), tenantData);
+        batch.set(doc(db, 'global', 'users', 'list', user.uid), tenantData);
+        batch.set(doc(db, 'tenants', user.uid, 'config', 'global'), { exchangeRate: 36.5 });
+
+        await batch.commit();
+
+        toast.success('Cuenta y espacio de trabajo creados exitosamente');
       }
     } catch (error: any) {
       console.error(error);

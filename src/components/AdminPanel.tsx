@@ -1,6 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { collection, onSnapshot } from 'firebase/firestore';
-import { getFunctions, httpsCallable } from 'firebase/functions';
+import { collection, onSnapshot, writeBatch, doc } from 'firebase/firestore';
 import { db } from '../../firebase';
 import toast from 'react-hot-toast';
 
@@ -12,7 +11,6 @@ interface GlobalUser {
 }
 
 export const AdminPanel: React.FC = () => {
-
   const [users, setUsers] = useState<GlobalUser[]>([]);
   const [loading, setLoading] = useState(true);
   const [processingId, setProcessingId] = useState<string | null>(null);
@@ -21,8 +19,8 @@ export const AdminPanel: React.FC = () => {
     // Escuchar la colección global de usuarios
     const unsub = onSnapshot(collection(db, 'global', 'users', 'list'), (snap) => {
       const data: GlobalUser[] = [];
-      snap.forEach(doc => {
-        data.push({ id: doc.id, ...doc.data() } as GlobalUser);
+      snap.forEach(document => {
+        data.push({ id: document.id, ...document.data() } as GlobalUser);
       });
       setUsers(data);
       setLoading(false);
@@ -35,9 +33,17 @@ export const AdminPanel: React.FC = () => {
     const newStatus = currentStatus === 'active' ? 'suspended' : 'active';
     setProcessingId(uid);
     try {
-      const functions = getFunctions();
-      const toggleFn = httpsCallable(functions, 'toggleUserStatus');
-      await toggleFn({ targetUid: uid, newStatus });
+      // Plan B: Ejecutar la actualización directamente desde el Frontend (Solo el Super Admin puede hacer esto según las reglas)
+      const batch = writeBatch(db);
+      
+      const tenantRef = doc(db, 'tenants', uid);
+      const globalUserRef = doc(db, 'global', 'users', 'list', uid);
+      
+      batch.update(tenantRef, { status: newStatus });
+      batch.update(globalUserRef, { status: newStatus });
+      
+      await batch.commit();
+
       toast.success(`Usuario ${newStatus === 'active' ? 'activado' : 'suspendido'} correctamente`);
     } catch (error: any) {
       console.error(error);
