@@ -1,20 +1,55 @@
 <div align="center">
-<img width="1200" height="475" alt="GHBanner" src="https://github.com/user-attachments/assets/0aa67016-6eaf-458a-adb2-6e31a0763ed6" />
+  <h1>📦 BodeApp</h1>
+  <p><strong>Sistema de Punto de Venta (POS) y Gestión Multi-Tenant (SaaS)</strong></p>
 </div>
 
-# Run and deploy your AI Studio app
+---
 
-This contains everything you need to run your app locally.
+> 🚧 **ESTADO DEL PROYECTO: EN CONSTRUCCIÓN** 🚧
+>
+> Este proyecto se encuentra actualmente en fase de desarrollo activo. Algunas funcionalidades pueden estar incompletas, sujetas a cambios bruscos o en proceso de prueba.
 
-View your app in AI Studio: https://ai.studio/apps/temp/1
+## 📝 Sobre el Proyecto
 
-## Run Locally
+**BodeApp** (calcbo) es una aplicación moderna orientada a la gestión de negocios y puntos de venta (POS) bajo una arquitectura SaaS (Software as a Service) multi-tenant. 
 
-**Prerequisites:**  Node.js
+El sistema permite la administración de inventarios, calculadoras de productos, y cuenta con distintos roles de usuario, incluyendo un panel de **Super Admin** para la gestión global de inquilinos (tenants) y un **Dashboard** para las operaciones del día a día del POS.
 
+## 🚀 Tecnologías Principales
 
-1. Install dependencies:
-   `npm install`
-2. Set the `GEMINI_API_KEY` in [.env.local](.env.local) to your Gemini API key
-3. Run the app:
-   `npm run dev`
+- **Frontend:** React 19, TypeScript, Vite
+- **Estilos:** Tailwind CSS (con soporte para modo claro/oscuro y diseño moderno)
+- **Backend / Base de Datos:** Firebase (Auth, Firestore)
+- **Iconografía:** Lucide React
+
+## 💻 Instalación y Uso Local
+
+Sigue estos pasos para correr el entorno de desarrollo en tu máquina local:
+
+### Prerrequisitos
+- Node.js (v18+)
+- Cuenta de Firebase configurada
+
+### Configuración
+
+1. **Clonar e instalar dependencias:**
+   ```bash
+   npm install
+   ```
+
+2. **Variables de Entorno:**
+   Crea un archivo `.env` en la raíz del proyecto usando como base el archivo `.env.example`:
+   ```bash
+   cp .env.example .env
+   ```
+   *Rellena el archivo `.env` con las credenciales de tu proyecto de Firebase.*
+
+3. **Correr la aplicación:**
+   ```bash
+   npm run dev
+   ```
+
+La aplicación estará disponible localmente, usualmente en `http://localhost:5173`.
+
+---
+*Desarrollado para la optimización de procesos de venta y gestión.*
