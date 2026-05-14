@@ -15,7 +15,7 @@ const AppContent = () => {
   }
 
   return (
-    <div className="relative h-screen overflow-hidden bg-slate-900">
+    <div className="relative h-screen overflow-hidden bg-slate-50">
       {/* Navbar minimalista superior para el admin o para cerrar sesión */}
       <div className="absolute top-0 right-0 z-50 p-2 flex gap-2">
         {isSuperAdmin && (

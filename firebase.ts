@@ -4,13 +4,13 @@ import { getAnalytics } from "firebase/analytics";
 import { getAuth } from "firebase/auth";
 
 const firebaseConfig = {
-  apiKey: "AIzaSyD6mq3pcTkb4UZJwwme8NUhZbgN2VQCH8Q",
-  authDomain: "bode-app-c1c08.firebaseapp.com",
-  projectId: "bode-app-c1c08",
-  storageBucket: "bode-app-c1c08.firebasestorage.app",
-  messagingSenderId: "1048198673260",
-  appId: "1:1048198673260:web:46e0ffd115505cbd00f949",
-  measurementId: "G-3SXE5MFZQ0"
+  apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
+  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
+  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
+  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
+  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
+  appId: import.meta.env.VITE_FIREBASE_APP_ID,
+  measurementId: import.meta.env.VITE_FIREBASE_MEASUREMENT_ID
 };
 
 // Initialize Firebase
